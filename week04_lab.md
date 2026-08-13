@@ -2447,33 +2447,66 @@ GoRoute(
 > 💡 **หลีกเลี่ยงการขอโค้ดทั้งไฟล์จาก AI** ให้ลองเขียนเองก่อน ถ้าติดจริง ๆ ให้ถามเป็นจุด ๆ ไป (เช่น "ทำไม setState ใน Widget อื่นไม่ทำให้ Saved Screen รีเฟรช") จะได้เรียนรู้มากกว่าการคัดลอกมาทั้งหมด
 
 บันทึกรูปผลการทดลอง
-```image
-บันทึกรูปโค้ด และรูปผลการทดลองที่นี่ 
-```
+
+<img width="1697" height="790" alt="image" src="https://github.com/user-attachments/assets/9aa77de1-4cd4-4248-82f7-84b666008408" />
+
+
 ---
 
 ## 📝 คำถามท้ายใบงาน
 
 **ตอบคำถามต่อไปนี้:**
-
+```
 1. `LayoutBuilder` ต่างกับ `MediaQuery` อย่างไร? มีหลักการเลือกใช้แต่ละแบบในสถานการณ์ใด?
-```text
+ข้อแตกต่าง: 
+   MediaQuery ใช้สำหรับอ่านขนาด/ข้อมูลของ "หน้าจอโดยรวม" (Screen Dimensions) ทั้งหมด
+   LayoutBuilder ใช้สำหรับอ่านขนาด "พื้นที่ที่มีอยู่" (Parent Constraints) ของ Widget แม่ที่โอบล้อมมันอยู่
 
+ หลักการเลือกใช้:
+   ใช้ MediaQuery เมื่อต้องการปรับเปลี่ยน UI ตามประเภทของอุปกรณ์แบบ Macro Layout (เช่น สลับไปมาระหว่างแนวตั้ง-แนวนอน, เช็กว่าเปิดบนแท็บเล็ตหรือมือถือ) หรือเมื่อต้องการดึงข้อมูลเชิงกายภาพของเครื่อง เช่น Safe Area, ความสูงแป้นพิมพ์
+   ใช้ LayoutBuilder เมื่อต้องการสร้าง Responsive Widget เฉพาะส่วน (Micro Layout) เช่น Card หรือ Grid ที่จำเป็นต้องคำนวณขนาดตาม Parent Box เพื่อปรับคอลัมน์ให้อัตโนมัติ ไม่ว่า Widget นั้นจะไปวางอยู่ตรงส่วนไหนของหน้าจอก็ตาม
+
+```
 ```
 2. ทำไม Go Router ถึงใช้ `StatefulShellRoute` แทน `ShellRoute` ธรรมดา? ผลต่างเรื่อง State Management คืออะไร?
-```text
+สาเหตุที่ใช้ StatefulShellRoute:
+เพราะต้องการรักษาสถานะ (State) ของแต่ละ Tab ใน BottomNavigationBar เอาไว้ เมื่อผู้ใช้สลับไปมาระหว่าง Tab (เช่น Home -> Explore -> Home) หน้าเดิมจะไม่ถูกทำลายและสร้างใหม่
 
+ผลต่างเรื่อง State Management:
+  ShellRoute (ธรรมดา): ทุกครั้งที่มีการสลับ Tab หน้าเก่าจะถูก Disposed (ทำลาย) และสร้างขึ้นใหม่ (Rebuild) ทำให้ State เดิมสูญหาย เช่น ตำแหน่งการ Scroll, Text ในช่องค้นหา หรือ Form Data
+  StatefulShellRoute: ใช้ IndexedStack / StatefulNavigationShell ในการจัดการเบื้องหลัง ทำให้สามารถ "ซ่อน" หน้าเดิมไว้โดยคง State และ Scroll Position ทั้งหมดเอาไว้ได้ เมื่อสลับกลับมาจึงทำงานต่อได้ทันทีโดยไม่ต้องโหลดข้อมูลใหม่
+```
 ```
 3. ในโค้ด `DestinationCard` เหตุใดจึงใช้ `Expanded` ครอบ `Text` ชื่อ Destination ? จะเกิดอะไรขึ้นถ้าลบออก?
-```text
+เหตุผลที่ใช้ Expanded:
+  เพื่อบีบ/จำกัดพื้นที่ให้ Text ขยายตัวได้เต็มที่เฉพาะตามขนาดที่มีอยู่ของ Card และบีบข้อความไม่ให้ดัน Widget ข้างเคียง (เช่น ปุ่มราคา หรือ Icon) ออกไปนอกขอบ Card
+
+ผลที่จะเกิดขึ้นถ้าลบออก:
+  หากชื่อ Destination ยาวเกินไป Text จะดันพื้นที่ให้กว้างเกินขอบของ Card และทำให้เกิด Error จอเหลืองคาดดำ "RenderFlex overflowed by ... pixels" ทางขวามือทันที
 
 ```
+```
 4. การส่งข้อมูลผ่าน `extra` ของ Go Router มีข้อจำกัดอะไรกรณี Deep Link / Web Refresh? และแก้ปัญหานี้ได้อย่างไร?
-```text
+ ข้อจำกัด:
+  ข้อมูล Object ที่ส่งผ่าน `extra` จะคงอยู่ใน Memory ชั่วคราวเฉพาะตอนที่สั่ง context.push/go จากในแอปเท่านั้น หากผู้ใช้เปิดหน้าเว็บตรงผ่าน URL (Deep Link) หรือกด Refresh (F5) บนเว็บ ข้อมูลใน `extra` จะกลายเป็น `null` ทันที เพราะไม่มีการส่ง Object นั้นมาจากต้นทาง ทำให้แอป Crash หรือแสดงผลผิดพลาด
+
+ วิธีแก้ไข:
+  1. ส่งเฉพาะ `id` ผ่าน Path Parameter หรือ Query Parameter ใน URL (เช่น /destinations/:id)
+  2. ในหน้า destination-detail ให้ทำ Fallback Logic โดยนำ `id` ที่ได้ไปค้นหาข้อมูลจาก Data Source / Database / API เพื่อนำ Object กลับมาแสดงผลหาก `extra` เป็น `null` (ตัวอย่างเช่น: state.extra as Destination? ?? sampleDestinations.firstWhere((d) => d.id == id))
+```
 
 ```
 5. วาด Navigation Hierarchy ของแอปนี้ (สามารถวาดบนกระดาษแล้วถ่ายรูปส่งได้)
-```text
+MaterialApp.router
+ └── StatefulShellRoute (ShellRoute / Main Wrapper)
+      ├── BottomNavigationBar
+      │    ├── [Tab 1] HomeScreen          => Route: '/'
+      │    ├── [Tab 2] ExploreScreen       => Route: '/explore'
+      │    ├── [Tab 3] SavedScreen         => Route: '/saved'
+      │    └── [Tab 4] ProfileScreen       => Route: '/profile'
+      │
+      └── Sub-Routes (Pushed on top)
+           └── DestinationDetailScreen     => Route: '/explore/destinations/:id'
 
 ```
 ---
